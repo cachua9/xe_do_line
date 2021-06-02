@@ -1,13 +1,13 @@
-const int EnA = 5; // right
+const int EnA = 5; // điều khiển tốc độ của động cơ
 const int EnB = 6; // left
-const int InA = 8;
-const int InB = 9;
-const int InC = 10;
+const int InA = 8; // 2 dây nguồn cấp tín hiệu cho động cơ
+const int InB = 9; //
+const int InC = 10; //  2 dây nguồn cấp tín hiệu cho động còn lại
 const int InD = 11;
 
 int error, previous_error, is_left_direction;
 
-const int MAX_SPEED = 175;
+const int MAX_SPEED = 150;
 int mask;
 const int NUM_SENSORS = 5; 
 const int sensor_pins[NUM_SENSORS] = {A1, A2, A3, A4, A5};
@@ -33,15 +33,15 @@ void setup() {
     for(int i = 0; i < NUM_SENSORS; i++) {
         pinMode(sensor_pins[i], INPUT);
     }
+
+    error = 0;
 }
 
 void loop() {
     previous_error = error;
     error = getSensor();
-    if (error != previous_error) {
-        if (previous_error != 5) {
-            control_robot(error);
-        }
+    if (previous_error != 5) {
+      control_robot(error);
     }
 }
 
@@ -50,24 +50,31 @@ int getSensor() {
     for(int i = 0; i < NUM_SENSORS; i++) {
         mask |= digitalRead(sensor_pins[i]) << i;
     }
+
+    int left = (mask >> 1) * (mask >> 2);
+    int right = (mask << 1) * (mask << 2);
+    if(left + right == 0) return 0;
+    
     error = 0;
     switch (mask) { 
-        case 0b00000: error = 10; break;
-        case 0b11011: error = 0; break;                             
+        case 0b00000: error = 10; break;                                     
         case 0b11111: error = 5; break;
         
-        case 0b10000: is_left_direction = 0; error = 6; break;
-        case 0b11000: is_left_direction = 0; error = 6; break;
-        case 0b11001: is_left_direction = 0; error = -1; break;
-        case 0b11101: is_left_direction = 0; error = -2; break;
-        case 0b11100: is_left_direction = 0; error = -3; break;
+        case 0b10001: error = 0; break;
+        case 0b10000: error = 0; break;
+        case 0b11000: error = 0; break;
+        case 0b11011: error = 0; break;
+        case 0b00011: error = 0; break;
+        case 0b00001: error = 0; break;            
+        
         case 0b11110: is_left_direction = 0; error = -4; break;
-        case 0b01111: is_left_direction = 1; error = 4; break;
-        case 0b00111: is_left_direction = 1; error = 3; break;
-        case 0b10111: is_left_direction = 1; error = 2; break;
+        case 0b11100: is_left_direction = 0; error = -3; break;
+        case 0b11101: is_left_direction = 0; error = -2; break;
+        case 0b11001: is_left_direction = 0; error = -1; break;
         case 0b10011: is_left_direction = 1; error = 1; break;
-        case 0b00011: is_left_direction = 1; error = 7; break;
-        case 0b00001: is_left_direction = 1; error = 7; break;
+        case 0b10111: is_left_direction = 1; error = 2; break;
+        case 0b00111: is_left_direction = 1; error = 3; break;
+        case 0b01111: is_left_direction = 1; error = 4; break;
         
     }
     return error;
@@ -80,30 +87,23 @@ void control_motor(int left, int right) {
 
 void control_robot(int error) {
     switch (error) {
-        case -4: control_motor(25, 125);  break;
-        case -3: control_motor(25, 75);  break;
-        case -2: control_motor(25, 50);  break;
-        case -1: control_motor(100, 150); break;
-        case  1: control_motor(150, 100); break;
-        case  2: control_motor(50, 25);  break;
-        case  3: control_motor(75, 25);  break;
-        case  4: control_motor(125, 25);  break;
-        case  6: control_motor(0, 70);    break;
-        case  7: control_motor(70, 0);    break;
+        case -4: control_motor(50, 100);  break;
+        case -3: control_motor(50, 75);  break;
+        case -2: control_motor(25, 75);  break;
+        case -1: control_motor(25, 50); break;
+        case  1: control_motor(50, 25); break;
+        case  2: control_motor(75, 25);  break;
+        case  3: control_motor(75, 50);  break;
+        case  4: control_motor(100, 50);  break;
 //        case 10: control_motor(0, 0);     break;
         case  5: 
             if(is_left_direction == 0)
-                control_motor(0, 110); 
+                control_motor(25, 125); 
             else
-                control_motor(110, 0);    
+                control_motor(125, 25);    
             break;   
-        case  0: 
-            if(is_left_direction == 0)
-                control_motor(125, 150);
-            else if(is_left_direction == 1)
-                control_motor(150, 125);  
-            else
-                control_motor(150, 150);  
+        case  0:
+                control_motor(125, 125);  
             break; 
         default: break;
     }
